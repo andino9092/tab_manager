@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "Hello Extensions",
   "description": "Base Level Extension",
   "version": "1.0",
@@ -20,3 +21,14 @@
     }
   ]
 }
+=======
+    "manifest_version": 3,
+    "name": "Hello Extensions",
+    "description": "Base Level Extension",
+    "version": "1.0",
+    "action": {
+      "default_popup": "index.html"
+    },
+    "permissions": ["tabs"]
+  }
+>>>>>>> 2f113420e2457fb431f5b3117ed31a12c92d8b1d
