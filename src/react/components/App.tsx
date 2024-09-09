@@ -1,27 +1,49 @@
+import { useEffect, useState } from "react";
+import './index.css'
 
+export default function App() {
+  const [tabs, setTabs] = useState<any[]>();
+  const [selected, setSelected] = useState<any[]>([]);
 
+  useEffect(() => {
+    const getTabs = async () => {
+      const response = await chrome.tabs
+        .query({ currentWindow: true })
+        .then((data: any) => {
+          setTabs(data);
+        });
+    };
 
+    getTabs();
+  }, []);
 
-export default function App(){
+  console.log(selected)
 
-    const sendMsg = async() => {
-        const [activeTab] = await chrome.tabs.query({active: true, lastFocusedWindow: true})
-    
-        await chrome.tabs.sendMessage(activeTab.id || 0, {
-            greeting: 'hello'
-        })
-        .catch(
-            (error) => console.log(error)
-        )
-        console.log(activeTab)
-    }
-
-    return (
-        <div>
-            <button onClick={sendMsg}>
-                Click me
-            </button>
-            Hello
-        </div>
-    )
+  return (
+    <div>
+      {tabs &&
+        tabs.map((tab: any) => {
+          return (
+            <div className="websites flex"
+              onClick={() => {
+                if (tab.groupId == -1) {
+                  setSelected([...selected, tab.id]);
+                } else {
+                  const filtered = selected.filter((val) => val != tab.id);
+                  setSelected(filtered);
+                }
+              }}
+            >
+              {tab.title} {tab.groupId}
+            </div>
+          );
+        })}
+        <button onClick={() => {
+            chrome.tabs.group({tabIds: selected})
+            setSelected([])
+        }}>
+            Group
+        </button>
+    </div>
+  );
 }
