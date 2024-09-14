@@ -1,29 +1,47 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import "../index.css";
+import SearchBar from "./SearchBar";
+import Tab from "./Tab";
+import Dropdown from "./Dropdown";
 
-interface Tab {
+export interface TabData {
   tabInfo: chrome.tabs.Tab;
   selected: boolean;
 }
 
-interface GroupInfo {
-  [groupId: number]: chrome.tabGroups.TabGroup;
+export interface GroupInfo {
+  [groupId: number]: {
+    tabGroupInfo: chrome.tabGroups.TabGroup;
+    // Represents list of tabs that are associated with the tabGroupID
+    // The numbers in this array are the corresponding indices within tabs state in App component
+    tabList: number[];
+  };
 }
 
 export default function App() {
-  const [tabs, setTabs] = useState<Tab[]>();
+  const [tabs, setTabs] = useState<TabData[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
-  const [groupInfo, setGroupInfo] = useState<GroupInfo>({});
+
+  // Information on all the groups
+  const [groupInfo, setGroupInfo] = useState<GroupInfo>();
+
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const getTabs = async () => {
-    let groupIds: number[] = [];
+    let groupIds = new Set<number>();
+    let tabList: { [key: number]: number[] } = {};
+
     const response = await chrome.tabs
       .query({ currentWindow: true })
       .then(async (data: chrome.tabs.Tab[]) => {
         setTabs(
-          data.map((tab: chrome.tabs.Tab): Tab => {
+          data.map((tab: chrome.tabs.Tab, i: number): TabData => {
             if (tab.groupId != -1) {
-              groupIds.push(tab.groupId);
+              groupIds.add(tab.groupId);
+              if (!(tab.groupId in tabList)) {
+                tabList[tab.groupId] = [];
+              }
+              tabList[tab.groupId].push(i);
             }
             return {
               tabInfo: tab,
@@ -31,91 +49,67 @@ export default function App() {
             };
           })
         );
-
       });
-      let groupPromises = groupIds.map(id => chrome.tabGroups.get(id))
-      const groupInfoData = await Promise.all(groupPromises);
+    const ids: number[] = [...groupIds];
+    let groupPromises = ids.map((id) => chrome.tabGroups.get(id));
+    const groupInfoData = await Promise.all(groupPromises);
 
-      let info: GroupInfo = {};
-      groupInfoData.forEach((data: chrome.tabGroups.TabGroup, i: number) => {
-        info[groupIds[i]] = data
-      })
-      setGroupInfo(info);
+    let info: GroupInfo = {};
+    groupInfoData.forEach((data: chrome.tabGroups.TabGroup, i: number) => {
+      info[ids[i]] = {
+        tabGroupInfo: data,
+        tabList: tabList[ids[i]],
+      };
+    });
+    setGroupInfo(info);
   };
 
-  console.log(groupInfo);
+  const freeTabs = tabs.filter((tab: TabData) => tab.tabInfo.groupId == -1);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     getTabs();
   }, []);
 
   return (
     <div className="flex font-inter">
-      <div className="flex flex-wrap overflow-y-scroll overflow-x-hidden w-[300px] h-[300px] text-base divide-y ">
-        {tabs && groupInfo && 
-          tabs.map((tab: Tab, i: number) => {
-            // if (tab.tabInfo.groupId != -1){
-            //   console.log(groupInfo[tab.tabInfo.groupId].color)
-            // }
-              
+      <div className="flex flex-row flex-wrap overflow-y-scroll overflow-x-hidden w-[300px] h-[300px] text-base divide-y ">
+        <SearchBar
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        ></SearchBar>
+        {groupInfo &&
+          Object.entries(groupInfo).map((entry, index) => {
+            const [groupId, data] = entry;
+            const { tabGroupInfo, tabList } = data;
             return (
-              <div
+              <Dropdown
+                groupId={Number(groupId)}
+                tabGroupInfo={tabGroupInfo}
+                tabList={tabList}
+                tabs={tabs}
+                searchQuery={searchQuery}
+                setSelected={setSelected}
+                setTabs={setTabs}
+              ></Dropdown>
+            );
+          })}
+        <div>Ungrouped Tabs</div>
+        {freeTabs.length != 0 &&
+          freeTabs.map((tab: TabData, i: number) => {
+            return (
+              <Tab
                 className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200"
                 style={{
                   backgroundColor: tab.selected ? "#a5b4fc" : "none",
                 }}
-                onClick={() => {
-                  if (!tab.selected) {
-                    setTabs(
-                      tabs.map((tab: Tab, index: number) => {
-                        return index == i
-                          ? {
-                              ...tab,
-                              selected: true,
-                            }
-                          : tab;
-                      })
-                    );
-                    // Number casting will not work for querying foreign tabs
-                    setSelected([...selected, Number(tab.tabInfo.id)]);
-                  } else {
-                    setTabs(
-                      tabs.map((tab: Tab, index: number) => {
-                        return index == i
-                          ? {
-                              ...tab,
-                              selected: false,
-                            }
-                          : tab;
-                      })
-                    );
-                    setSelected(
-                      selected.filter(
-                        (item: number): boolean => item != tab.tabInfo.id
-                      )
-                    );
-                  }
-                }}
-              >
-                <div className="flex justify-start gap-4 flex-row truncate">
-                  <img
-                    src={tab.tabInfo.favIconUrl}
-                    width={20}
-                    height={20}
-                    alt="favicon"
-                  ></img>
-
-                  {tab.tabInfo.title}
-                </div>
-                {/* {tab.tabInfo.groupId != -1 &&  groupInfo && 
-              <div className="w-[20px] h-[20px] rounded-full" style={{backgroundColor: groupInfo[tab.tabInfo.groupId].color}}> 
-                
-                
-                </div>} */}
-              </div>
+                setSelected={setSelected}
+                setTabs={setTabs}
+                tab={tab}
+                i={i}
+              ></Tab>
             );
           })}
-        <div className="flex w-full justify-center gap-4">
+        <div className="flex w-full justify-center">
           <button
             className="grow p-4 hover:bg-indigo-500 hover:text-white transition-all"
             onClick={async () => {
