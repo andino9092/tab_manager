@@ -17,6 +17,7 @@ export default function Tab({
   className,
   style,
 }: TabProps) {
+  console.log(tab)
   return (
     <div
       className={className}
@@ -24,26 +25,26 @@ export default function Tab({
       onClick={() => {
         if (!tab.selected) {
           setTabs((prev: TabData[]) =>
-            prev.map((tab: TabData, index: number) => {
-              return index == i
+            prev.map((prevTab: TabData, index: number) => {
+              return tab.tabInfo.id == prevTab.tabInfo.id
                 ? {
-                    ...tab,
+                    ...prevTab,
                     selected: true,
                   }
-                : tab;
+                : prevTab;
             })
           );
           // Number casting will not work for querying foreign tabs
           setSelected((prev: number[]) => [...prev, Number(tab.tabInfo.id)]);
         } else {
           setTabs((prev: TabData[]) =>
-            prev.map((tab: TabData, index: number) => {
-              return index == i
+            prev.map((prevTab: TabData, index: number) => {
+              return tab.tabInfo.id == prevTab.tabInfo.id
                 ? {
-                    ...tab,
+                    ...prevTab,
                     selected: false,
                   }
-                : tab;
+                : prevTab;
             })
           );
           setSelected((prev) =>

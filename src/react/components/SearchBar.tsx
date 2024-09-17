@@ -12,8 +12,6 @@ export interface SearchBarProps{
 export default function SearchBar({searchQuery, setSearchQuery}: SearchBarProps){
 
 
-    console.log(searchQuery)
-
     return (
         <div>
             <input value={searchQuery} onChange={(e: ChangeEvent<HTMLInputElement>): void => {

@@ -40,11 +40,12 @@ export default function Dropdown({
 
   return (
     <div
+      className="w-full"
       onClick={() => {
         setCollapsed((prev) => !prev);
       }}
     >
-      <div className="ml-2">{tabGroupInfo.title}</div>
+      <div className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200">{tabGroupInfo.title}</div>
       <div>
         <AnimatePresence>
           {!collapsed &&
