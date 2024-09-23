@@ -9,14 +9,6 @@ export interface TabData {
   selected: boolean;
 }
 
-// Need to Collapse ungrouped tabs
-// Add background color to tab groups that correspond with tabgroup Color
-// Add closeSelected option for tabs
-// 
-// 
-// 
-
-
 export interface GroupInfo {
   [groupId: number]: {
     tabGroupInfo: chrome.tabGroups.TabGroup;
@@ -72,16 +64,26 @@ export default function App() {
     setGroupInfo(info);
   };
 
-  const freeTabs = tabs.filter((tab: TabData) => tab.tabInfo.groupId == -1);
+  const freeTabs = tabs.filter((tab: TabData) => {
+    if (tab.tabInfo.groupId != -1) {
+      return false;
+    }
+    if (searchQuery != "") {
+      return (
+        tab.tabInfo.title?.includes(searchQuery) ||
+        tab.tabInfo.url?.includes(searchQuery)
+      );
+    }
+    return true;
+  });
 
   useLayoutEffect(() => {
     getTabs();
   }, []);
 
-  console.log(selected)
   return (
     <div className="flex font-inter">
-      <div className="flex flex-row flex-wrap overflow-y-scroll overflow-x-hidden w-[300px] h-[300px] text-base divide-y ">
+      <div className="flex flex-row flex-wrap overflow-y-scroll overflow-x-hidden w-[300px] h-[300px] text-base ">
         <SearchBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -102,22 +104,27 @@ export default function App() {
               ></Dropdown>
             );
           })}
-        <div className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200">Ungrouped Tabs</div>
-        {freeTabs.length != 0 &&
-          freeTabs.map((tab: TabData, i: number) => {
-            return (
-              <Tab
-                className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200"
-                style={{
-                  backgroundColor: tab.selected ? "#a5b4fc" : "",
-                }}
-                setSelected={setSelected}
-                setTabs={setTabs}
-                tab={tab}
-                i={i}
-              ></Tab>
-            );
-          })}
+        <div className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200">
+          Ungrouped Tabs
+        </div>
+        <div className="divide-y">
+          {freeTabs.length != 0 &&
+            freeTabs.map((tab: TabData, i: number) => {
+              return (
+                <Tab
+                  className="pl-4 py-2 first:pt-0 last:pb-0  w-full h-[50px] transition-all flex flex-col justify-center hover:bg-indigo-200"
+                  style={{
+                    backgroundColor: tab.selected ? "#a5b4fc" : "",
+                  }}
+                  setSelected={setSelected}
+                  setTabs={setTabs}
+                  tab={tab}
+                  i={i}
+                ></Tab>
+              );
+            })}
+          {freeTabs.length == 0 && <div className="py-2">No filtered tabs...</div>}
+        </div>
         <div className="flex w-full justify-center">
           <button
             className="grow p-4 hover:bg-green-500 hover:text-white transition-all"
@@ -144,7 +151,7 @@ export default function App() {
           <button
             className="grow p-4 hover:bg-red-500 hover:text-white transition-all"
             onClick={async () => {
-              await chrome.tabs.remove(selected)
+              await chrome.tabs.remove(selected);
               setSelected([]);
               getTabs();
             }}

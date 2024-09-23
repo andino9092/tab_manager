@@ -14,10 +14,9 @@ export default function SearchBar({searchQuery, setSearchQuery}: SearchBarProps)
 
     return (
         <div>
-            <input value={searchQuery} onChange={(e: ChangeEvent<HTMLInputElement>): void => {
+            <input className="w-full mx-2 my-3 py-1  transition-all outline-none border-b-2 border-gray-300 hover:border-gray-500 focus:border-gray-700" placeholder='Search...' value={searchQuery} onChange={(e: ChangeEvent<HTMLInputElement>): void => {
                 setSearchQuery(e.target.value)
             }}></input>
-
 
         </div>
     )
